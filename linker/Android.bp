@@ -73,6 +73,44 @@ cc_object {
 // linker default configuration
 // ========================================================
 
+// TARGET_LD_SHIM_LIBS and TARGET_PROCESS_SDK_VERSION_OVERRIDE reach the
+// linker through the bionic_linker soong config namespace, which a board
+// sets with soong_config_set,bionic_linker,ld_shim_libs and
+// soong_config_set,bionic_linker,process_sdk_version_overrides.
+soong_config_module_type {
+    name: "linker_shim_libs_cc_defaults",
+    module_type: "cc_defaults",
+    config_namespace: "bionic_linker",
+    value_variables: ["ld_shim_libs"],
+    properties: ["cppflags"],
+}
+
+linker_shim_libs_cc_defaults {
+    name: "shim_libs_defaults",
+    soong_config_variables: {
+        ld_shim_libs: {
+            cppflags: ["-DLD_SHIM_LIBS=\"%s\""],
+        },
+    },
+}
+
+soong_config_module_type {
+    name: "linker_sdk_version_overrides_cc_defaults",
+    module_type: "cc_defaults",
+    config_namespace: "bionic_linker",
+    value_variables: ["process_sdk_version_overrides"],
+    properties: ["cppflags"],
+}
+
+linker_sdk_version_overrides_cc_defaults {
+    name: "process_sdk_version_overrides_defaults",
+    soong_config_variables: {
+        process_sdk_version_overrides: {
+            cppflags: ["-DSDK_VERSION_OVERRIDES=\"%s\""],
+        },
+    },
+}
+
 // Configuration for the linker binary and any of its static libraries.
 cc_defaults {
     name: "linker_defaults",

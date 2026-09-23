@@ -3819,7 +3819,7 @@ std::vector<android_namespace_t*> init_default_namespaces(const char* executable
       break;
     }
   }
-  DEBUG("Target SDK for %s = %d", executable_path, target_sdk);
+  LD_DEBUG(any, "Target SDK for %s = %u", executable_path, target_sdk);
 #endif
   set_application_target_sdk_version(target_sdk);
 
