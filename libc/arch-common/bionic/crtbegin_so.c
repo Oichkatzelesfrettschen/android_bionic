@@ -71,5 +71,6 @@ static void __on_dlclose_late(void) {
 #else
 # include "__dso_handle_so.h"
 # include "atexit.h"
+# include "crt_aeabi_mem_forward.h"
 #endif
 #include "pthread_atfork.h"
