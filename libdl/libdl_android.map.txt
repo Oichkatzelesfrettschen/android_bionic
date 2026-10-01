@@ -21,6 +21,7 @@ LIBDL_ANDROID {
     android_get_LD_LIBRARY_PATH; # apex
     android_update_LD_LIBRARY_PATH;
     android_get_exported_namespace; # apex
+    android_get_loaded_library_by_soname; # apex
     android_init_anonymous_namespace; # apex
     android_link_namespaces; # apex
     android_set_application_target_sdk_version; # apex

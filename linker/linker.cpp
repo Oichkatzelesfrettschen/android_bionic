@@ -1446,8 +1446,12 @@ static bool load_library(android_namespace_t* ns,
 
 static bool find_loaded_library_by_soname(android_namespace_t* ns,
                                           const char* name,
-                                          soinfo** candidate) {
+                                          soinfo** candidate,
+                                          bool skip_incomplete_or_unloading = false) {
   return !ns->soinfo_list().visit([&](soinfo* si) {
+    if (skip_incomplete_or_unloading && (!si->is_linked() || si->is_unloading())) {
+      return true;
+    }
     if (strcmp(name, si->get_soname()) == 0) {
       *candidate = si;
       return false;
@@ -1461,7 +1465,8 @@ static bool find_loaded_library_by_soname(android_namespace_t* ns,
 static bool find_loaded_library_by_soname(android_namespace_t* ns,
                                          const char* name,
                                          bool search_linked_namespaces,
-                                         soinfo** candidate) {
+                                         soinfo** candidate,
+                                         bool skip_incomplete_or_unloading = false) {
   *candidate = nullptr;
 
   // Ignore filename with path.
@@ -1469,7 +1474,7 @@ static bool find_loaded_library_by_soname(android_namespace_t* ns,
     return false;
   }
 
-  bool found = find_loaded_library_by_soname(ns, name, candidate);
+  bool found = find_loaded_library_by_soname(ns, name, candidate, skip_incomplete_or_unloading);
 
   if (!found && search_linked_namespaces) {
     // if a library was not found - look into linked namespaces
@@ -1480,7 +1485,7 @@ static bool find_loaded_library_by_soname(android_namespace_t* ns,
 
       android_namespace_t* linked_ns = link.linked_namespace();
 
-      if (find_loaded_library_by_soname(linked_ns, name, candidate)) {
+      if (find_loaded_library_by_soname(linked_ns, name, candidate, skip_incomplete_or_unloading)) {
         return true;
       }
     }
@@ -2004,6 +2009,9 @@ static void soinfo_unload_impl(soinfo* root) {
     }
   }
 
+  // Reentrant destructor and unload-hook lookups must exclude every retiring instance.
+  local_unload_list.for_each([](soinfo* si) { si->set_unloading(); });
+
   local_unload_list.for_each([](soinfo* si) {
     LD_LOG(kLogDlopen,
            "... dlclose: calling destructors for \"%s\"@%p ... ",
@@ -2327,6 +2335,26 @@ void* do_dlopen(const char* name, int flags,
   }
 
   return nullptr;
+}
+
+void* do_android_get_loaded_library_by_soname(const char* soname, android_namespace_t* ns,
+                                             const void* caller_addr) {
+  if (soname == nullptr || soname[0] == '\0' || strchr(soname, '/') != nullptr) {
+    return nullptr;
+  }
+  if (ns == nullptr) {
+    ns = get_caller_namespace(find_containing_library(caller_addr));
+  }
+
+  ProtectedDataGuard guard;
+  soinfo* candidate = nullptr;
+  if (!find_loaded_library_by_soname(ns, soname, true, &candidate,
+                                     true /* skip_incomplete_or_unloading */)) {
+    return nullptr;
+  }
+  // The local load group remains mapped until the acquired handle is closed.
+  candidate->increment_ref_count();
+  return candidate->to_handle();
 }
 
 int do_dladdr(const void* addr, Dl_info* info) {

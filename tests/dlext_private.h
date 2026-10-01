@@ -29,6 +29,10 @@ __BEGIN_DECLS
  * is used in the case when linker cannot identify the caller of dlopen/dlsym. This happens
  * for the code not loaded by dynamic linker; for example calls from the mono-compiled code.
  */
+// Returns a referenced loaded SONAME from ns and permitted direct namespace links.
+// A null ns selects the caller namespace. Misses preserve dlerror; close each hit.
+extern void* android_get_loaded_library_by_soname(const char* soname, android_namespace_t* ns);
+
 extern bool android_init_anonymous_namespace(const char* shared_libs_sonames,
                                              const char* library_search_path);
 

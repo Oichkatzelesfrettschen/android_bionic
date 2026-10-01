@@ -108,6 +108,10 @@ void* do_dlopen(const char* name,
                 const android_dlextinfo* extinfo,
                 const void* caller_addr);
 
+// Acquires a dlclose-compatible reference using namespace-visible SONAME records.
+void* do_android_get_loaded_library_by_soname(const char* soname, android_namespace_t* ns,
+                                             const void* caller_addr);
+
 int do_dlclose(void* handle);
 
 int do_dl_iterate_phdr(int (*cb)(dl_phdr_info* info, size_t size, void* data), void* data);

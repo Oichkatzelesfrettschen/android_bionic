@@ -68,6 +68,7 @@
                                          // unset.
 #define FLAG_PRELINKED        0x00000400 // prelink_image has successfully processed this soinfo
 #define FLAG_GLOBALS_TAGGED   0x00000800 // globals have been tagged by MTE.
+#define FLAG_UNLOADING        0x00001000 // destructors or unload hooks can observe the instance.
 #define FLAG_NEW_SOINFO       0x40000000 // new soinfo format
 
 #define SOINFO_VERSION 6
@@ -310,6 +311,8 @@ struct soinfo {
   }
 
   bool is_linked() const;
+  bool is_unloading() const { return (flags_ & FLAG_UNLOADING) != 0; }
+  void set_unloading() { flags_ |= FLAG_UNLOADING; }
   bool is_linker() const;
   bool is_main_executable() const;
 
