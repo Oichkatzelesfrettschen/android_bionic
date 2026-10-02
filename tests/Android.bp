@@ -837,6 +837,7 @@ cc_test_library {
             srcs: [
                 "cfi_test.cpp",
                 "dlext_test.cpp",
+                "loaded_soname_test.cpp",
                 "libdl_test.cpp",
             ],
             static_libs: [
@@ -914,6 +915,7 @@ cc_defaults {
         "libdl_test_df_1_global",
         "libdlext_test",
         "libdlext_test_different_soname",
+        "libloaded_soname_destructor",
         "libdlext_test_fd",
         "libdlext_test_norelro",
         "libdlext_test_recursive",

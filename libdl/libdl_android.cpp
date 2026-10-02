@@ -62,6 +62,19 @@ struct android_namespace_t* __loader_android_get_exported_namespace(const char* 
 __attribute__((__weak__, visibility("default"))) void __loader_android_set_16kb_appcompat_mode(
     bool enable_app_compat);
 
+__attribute__((__weak__, visibility("default")))
+void* __loader_android_get_loaded_library_by_soname(const char* soname,
+                                                  struct android_namespace_t* ns,
+                                                  const void* caller_addr);
+
+// Acquires an existing namespace-visible library by SONAME without filesystem lookup.
+// A null namespace selects the caller's namespace. Misses leave dlerror unchanged;
+// successful handles own a reference that the caller releases with dlclose.
+__attribute__((__weak__))
+void* android_get_loaded_library_by_soname(const char* soname, struct android_namespace_t* ns) {
+  return __loader_android_get_loaded_library_by_soname(soname, ns, __builtin_return_address(0));
+}
+
 // Proxy calls to bionic loader
 __attribute__((__weak__))
 void android_get_LD_LIBRARY_PATH(char* buffer, size_t buffer_size) {

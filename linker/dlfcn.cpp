@@ -98,6 +98,15 @@ bool __loader_android_handle_signal(int signal_number, siginfo_t* info,
                                     void* context) __LINKER_PUBLIC__;
 }
 
+extern "C" void* __loader_android_get_loaded_library_by_soname(
+    const char* soname, android_namespace_t* ns, const void* caller_addr) __LINKER_PUBLIC__;
+
+void* __loader_android_get_loaded_library_by_soname(const char* soname, android_namespace_t* ns,
+                                                  const void* caller_addr) {
+  ScopedPthreadMutexLocker locker(&g_dl_mutex);
+  return do_android_get_loaded_library_by_soname(soname, ns, caller_addr);
+}
+
 pthread_mutex_t g_dl_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
 static char* __bionic_set_dlerror(char* new_value) {

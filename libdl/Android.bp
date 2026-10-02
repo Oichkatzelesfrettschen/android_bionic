@@ -168,6 +168,13 @@ cc_library {
         versions: ["current"],
     },
 
+    // android_get_loaded_library_by_soname extends the APEX-visible
+    // LIBDL_ANDROID set; the header ABI diff against the frozen platform
+    // reference reports that as EXTENSION and still fails incompatible changes.
+    header_abi_checker: {
+        diff_flags: ["-allow-extensions"],
+    },
+
     apex_available: [
         "com.android.runtime",
     ],

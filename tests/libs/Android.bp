@@ -47,6 +47,12 @@ cc_defaults {
     },
 }
 
+cc_test_library {
+    name: "libloaded_soname_destructor",
+    defaults: ["bionic_testlib_defaults"],
+    srcs: ["loaded_soname_destructor.cpp"],
+}
+
 // -----------------------------------------------------------------------------
 // Test library ELFs for linker page size related tests
 // -----------------------------------------------------------------------------
