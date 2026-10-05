@@ -518,7 +518,7 @@ p_ere_exp(
 				count2 = p_count(p);
 				REQUIRE(count <= count2, REG_BADBR);
 			} else		/* single number with comma */
-				count2 = INFINITY;
+				count2 = RE_INFINITY;
 		} else		/* just a single number */
 			count2 = count;
 		repeat(p, pos, count, count2, 0);
@@ -713,7 +713,7 @@ p_simp_re(
 				count2 = p_count(p);
 				REQUIRE(count <= count2, REG_BADBR);
 			} else		/* single number with comma */
-				count2 = INFINITY;
+				count2 = RE_INFINITY;
 		} else		/* just a single number */
 			count2 = count;
 		repeat(p, pos, count, count2, 0);
@@ -1136,14 +1136,14 @@ repeat(
     struct parse *p,
     sopno start,		/* operand from here to end of strip */
     int from,			/* repeated from this number */
-    int to,			/* to this number of times (maybe INFINITY) */
+    int to,			/* to this number of times (maybe RE_INFINITY) */
     size_t reclimit)
 {
 	sopno finish;
 #	define	N	2
 #	define	INF	3
 #	define	REP(f, t)	((f)*8 + (t))
-#	define	MAP(n)	(((n) <= 1) ? (n) : ((n) == INFINITY) ? INF : N)
+#	define	MAP(n)	(((n) <= 1) ? (n) : ((n) == RE_INFINITY) ? INF : N)
 	sopno copy;
 
 	_DIAGASSERT(p != NULL);

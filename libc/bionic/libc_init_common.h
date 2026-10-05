@@ -36,9 +36,10 @@ typedef struct {
   void (**fini_array)(void);
 } structors_array_t;
 
-__BEGIN_DECLS
-
+// main has no language linkage, so it is declared outside the C block.
 extern int main(int argc, char** argv, char** env);
+
+__BEGIN_DECLS
 
 __noreturn void __libc_init(void* raw_args,
                             void (*onexit)(void),
