@@ -41,9 +41,11 @@
 
 #include <new>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
+#include <android-base/parseint.h>
 #include <android-base/properties.h>
 #include <android-base/scopeguard.h>
 #include <async_safe/log.h>
@@ -3301,6 +3303,39 @@ bool soinfo::prelink_image() {
   return true;
 }
 
+#ifdef SDK_VERSION_OVERRIDES
+// Strips a leading "/system" from "/system/vendor/..." so a listed path matches whether /vendor
+// is a symlink into /system (the file's realpath is then /system/vendor/...) or its own mount.
+static std::string_view canonical_vendor_path(std::string_view path) {
+  constexpr std::string_view kSystemVendor = "/system/vendor/";
+  if (path.substr(0, kSystemVendor.size()) == kSystemVendor) {
+    path.remove_prefix(strlen("/system"));
+  }
+  return path;
+}
+
+// Looks `path` up in the space-separated "path=sdk" entries of SDK_VERSION_OVERRIDES and stores
+// the entry's SDK version in `*sdk`. Entries that lack '=' or carry a non-numeric SDK are skipped.
+static bool find_sdk_version_override(const char* path, uint32_t* sdk) {
+  const std::string_view wanted = canonical_vendor_path(path);
+  std::string_view rest = SDK_VERSION_OVERRIDES;
+  while (!rest.empty()) {
+    size_t end = rest.find(' ');
+    std::string_view entry = rest.substr(0, end);
+    rest = (end == std::string_view::npos) ? std::string_view() : rest.substr(end + 1);
+
+    size_t eq = entry.rfind('=');
+    if (eq == std::string_view::npos || canonical_vendor_path(entry.substr(0, eq)) != wanted) {
+      continue;
+    }
+    if (android::base::ParseUint(std::string(entry.substr(eq + 1)).c_str(), sdk)) {
+      return true;
+    }
+  }
+  return false;
+}
+#endif
+
 bool soinfo::link_image(const SymbolLookupList& lookup_list, soinfo* local_group_root,
                         const android_dlextinfo* extinfo, size_t* relro_fd_offset) {
   if (is_image_linked()) {
@@ -3326,6 +3361,14 @@ bool soinfo::link_image(const SymbolLookupList& lookup_list, soinfo* local_group
   if (has_text_relocations) {
     // Fail if app is targeting M or above.
     int app_target_api_level = get_application_target_sdk_version();
+#ifdef SDK_VERSION_OVERRIDES
+    uint32_t lib_sdk = 0;
+    if (find_sdk_version_override(get_realpath(), &lib_sdk)) {
+      DEBUG("\"%s\" has text relocations: target sdk %d overridden to %u", get_realpath(),
+            app_target_api_level, lib_sdk);
+      app_target_api_level = static_cast<int>(lib_sdk);
+    }
+#endif
     if (app_target_api_level >= 23) {
       DL_ERR_AND_LOG("\"%s\" has text relocations (%s#Text-Relocations-Enforced-for-API-level-23)",
                      get_realpath(), kBionicChangesUrl);
@@ -3612,14 +3655,8 @@ std::vector<android_namespace_t*> init_default_namespaces(const char* executable
 
   uint32_t target_sdk = config->target_sdk_version();
 #ifdef SDK_VERSION_OVERRIDES
-  for (const auto& entry : android::base::Split(SDK_VERSION_OVERRIDES, " ")) {
-    auto splitted = android::base::Split(entry, "=");
-    if (splitted.size() == 2 && splitted[0] == executable_path) {
-      target_sdk = static_cast<uint32_t>(std::stoul(splitted[1]));
-      break;
-    }
-  }
-  DEBUG("Target SDK for %s = %d", executable_path, target_sdk);
+  find_sdk_version_override(executable_path, &target_sdk);
+  DEBUG("Target SDK for %s = %u", executable_path, target_sdk);
 #endif
   set_application_target_sdk_version(target_sdk);
 
